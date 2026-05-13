@@ -309,26 +309,57 @@ async function upload(file){
   const isImg=file.type.startsWith('image/');
   const isVid=file.type.startsWith('video/');
   const tp=isImg?'img':isVid?'vid':'file';
-  const path=`f/${Date.now()}_${file.name}`;
-  const ref=stor.ref(path);
+  const fpath=`f/${Date.now()}_${file.name}`;
+  const ref=stor.ref(fpath);
 
-  // Progress indicator
   const pid='p'+Date.now();
   const area=document.getElementById('msgs');
   const pel=ce('div');pel.id=pid;pel.className='prog';
-  pel.innerHTML=`<div style="font-size:13px;color:var(--muted)">⬆ ${esc(file.name)}</div><div class="pbg"><div class="pfill" id="${pid}b" style="width:0%"></div></div>`;
+  pel.innerHTML=`<div style="font-size:13px;color:var(--muted)" id="${pid}lbl">&#8679; ${esc(file.name)}</div><div class="pbg"><div class="pfill" id="${pid}b" style="width:0%"></div></div>`;
   area.appendChild(pel);area.scrollTop=area.scrollHeight;
 
-  const task=ref.put(file);
-  task.on('state_changed',s=>{
-    const pct=(s.bytesTransferred/s.totalBytes*100).toFixed(0);
-    const bar=document.getElementById(pid+'b');if(bar)bar.style.width=pct+'%';
-  });
-  await task;
-  const url=await ref.getDownloadURL();
-  pel.remove();
+  try{
+    await new Promise((resolve,reject)=>{
+      const task=ref.put(file);
+      task.on('state_changed',
+        s=>{
+          const pct=(s.bytesTransferred/s.totalBytes*100).toFixed(0);
+          const bar=document.getElementById(pid+'b');if(bar)bar.style.width=pct+'%';
+          const lbl=document.getElementById(pid+'lbl');if(lbl)lbl.textContent='\u2B06 '+esc(file.name)+' \u2014 '+pct+'%';
+        },
+        err=>reject(err),
+        ()=>resolve()
+      );
+    });
+    const url=await ref.getDownloadURL();
+    pel.remove();
+    await db.collection('messages').add({tp,n:file.name,sz:file.size,url,sp:fpath,at:firebase.firestore.FieldValue.serverTimestamp()});
+  }catch(e){
+    pel.remove();
+    const code=e.code||'';
+    console.error('Upload error:',e);
+    if(code.includes('unauthorized')||code.includes('permission-denied')||code.includes('storage/unauthorized')){
+      showStorageHelp();
+    } else {
+      toast('\u274C فشل: '+(e.message||code));
+    }
+  }
+}
 
-  await db.collection('messages').add({tp,n:file.name,sz:file.size,url,sp:path,at:firebase.firestore.FieldValue.serverTimestamp()});
+function showStorageHelp(){
+  const area=document.getElementById('msgs');
+  const el=ce('div');
+  el.style.cssText='background:#1e1e2a;border:1px solid #ef4444;border-radius:12px;padding:14px 16px;align-self:flex-end;max-width:min(92%,560px);animation:in .2s ease';
+  el.innerHTML='<div style="font-size:14px;font-weight:600;color:#ef4444;margin-bottom:8px">\u26A0\uFE0F Storage Rules مغلقة</div>'
+    +'<div style="font-size:13px;color:var(--muted);line-height:1.9">'
+    +'1. اذهب إلى <a href="https://console.firebase.google.com/project/fareed-07/storage" target="_blank" style="color:var(--accent)">Firebase Storage</a><br>'
+    +'2. اضغط تبويب <b style="color:var(--text)">Rules</b><br>'
+    +'3. غيّر السطر إلى: <br>'
+    +'<code style="display:block;background:var(--bg);border-radius:6px;padding:8px 10px;margin:6px 0;color:#22c55e;font-family:monospace;font-size:12px">allow read, write: if true;</code>'
+    +'4. اضغط <b style="color:var(--text)">Publish</b>'
+    +'<br><br><button onclick="this.closest(\'div\').parentElement.remove()" style="padding:7px 18px;background:var(--accent);color:#000;border:none;border-radius:8px;cursor:pointer;font-family:Tajawal,sans-serif;font-weight:600">حسناً</button>'
+    +'</div>';
+  area.appendChild(el);area.scrollTop=area.scrollHeight;
 }
 
 async function delMsg(id,sp){
@@ -387,12 +418,12 @@ function dlFile(url,name){const a=ce('a');a.href=url;a.download=name||'file';a.t
 
 // ── INIT ──
 const HARDCODED_CFG={
-  apiKey:"AIzaSyBMENtf0HFGI8vgUXwT4sJoncKUvt8oRb8",
-  authDomain:"fareed-07.firebaseapp.com",
-  projectId:"fareed-07",
-  storageBucket:"fareed-07.firebasestorage.app",
-  messagingSenderId:"990039730269",
-  appId:"1:990039730269:web:248ee431b366ec8cbc05b4"
+  apiKey:"AIzaSyBEloUm3ZUylQFi13qelMlKOv21osbcHA4",
+  authDomain:"fareedmmsh.firebaseapp.com",
+  projectId:"fareedmmsh",
+  storageBucket:"fareedmmsh.firebasestorage.app",
+  messagingSenderId:"358725041800",
+  appId:"1:358725041800:web:958b2faface9e65da1293d"
 };
 localStorage.setItem(SK,JSON.stringify(HARDCODED_CFG));
 initFB(HARDCODED_CFG);
