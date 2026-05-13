@@ -431,10 +431,10 @@ function escHtml(s) {
 
 // Unicode-safe base64 encode/decode (GitHub API stores file content as base64)
 function toB64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
+  return btoa(new TextEncoder().encode(str).reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
 }
 function fromB64(b64) {
-  return decodeURIComponent(escape(atob(b64.replace(/\s/g, ''))));
+  return new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
 }
 
 function readFileAsBase64(file) {
