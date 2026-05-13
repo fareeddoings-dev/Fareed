@@ -943,9 +943,12 @@ async function deleteItem(id) {
 
   setSending(true);
   try {
+    // Update index first — a stranded binary is harmless, a stranded index entry is not
+    items = items.filter(i => i.id !== id);
+    await saveIndex();
+    renderFeed();
     if ((item.type === 'image' || item.type === 'file') && item.fileSha) {
-      // Delete the binary file from uploads/
-      const safeName = item.url.split('/').pop(); // filename from raw URL
+      const safeName = item.url.split('/').pop();
       await ghFetch(`/contents/${UPLOADS_DIR}/${safeName}`, {
         method: 'DELETE',
         body:   JSON.stringify({
@@ -955,10 +958,6 @@ async function deleteItem(id) {
         }),
       });
     }
-    // Remove from items array and update index.json
-    items = items.filter(i => i.id !== id);
-    await saveIndex();
-    renderFeed();
   } catch (e) {
     showError('Delete failed: ' + e.message);
   } finally {
