@@ -562,7 +562,97 @@ async function saveIndexWithRetry(newItem) {
     }
   }
 }
-// ── TASK 6: App init + feed render goes here ──
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showLoading()  { document.getElementById('loading-overlay').classList.remove('hidden'); }
+function hideLoading()  { document.getElementById('loading-overlay').classList.add('hidden'); }
+function showError(msg) {
+  const bar = document.getElementById('error-bar');
+  bar.textContent = '⚠ ' + msg;
+  bar.classList.add('visible');
+  setTimeout(() => bar.classList.remove('visible'), 6000);
+}
+function showUploadProgress(msg) {
+  const el = document.getElementById('upload-progress');
+  el.textContent = msg;
+  el.classList.toggle('visible', !!msg);
+}
+function setSending(val) {
+  isSending = val;
+  const btn = document.getElementById('btn-send');
+  btn.disabled = val;
+  btn.textContent = val ? '⟳' : '↑';
+}
+
+// ── Feed rendering ────────────────────────────────────────────────────────────
+function renderFeed() {
+  const feed   = document.getElementById('feed');
+  const empty  = document.getElementById('empty-state');
+  // Remove all existing cards (keep #empty-state)
+  feed.querySelectorAll('.item-card').forEach(el => el.remove());
+  if (items.length === 0) {
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+  for (const item of items) {
+    const card = buildCard(item);
+    if (card) feed.appendChild(card);
+  }
+}
+
+function buildCard(item) {
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.dataset.id = item.id;
+
+  const meta = `
+    <div class="item-meta">
+      <span class="item-type-badge">${escHtml(item.type)}${item.lang ? ` · ${escHtml(item.lang)}` : ''}</span>
+      <div class="item-actions">
+        <button class="btn-action btn-copy" onclick="copyItem('${item.id}')">Copy</button>
+        <button class="btn-action btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
+      </div>
+    </div>`;
+
+  let body = '';
+  if (item.type === 'text') {
+    body = renderTextBody(item);
+  } else if (item.type === 'code') {
+    body = renderCodeBody(item);
+  } else if (item.type === 'image') {
+    body = renderImageBody(item);
+  } else if (item.type === 'file') {
+    body = renderFileBody(item);
+  } else {
+    return null;
+  }
+
+  const ts = `<div class="item-timestamp">${timeAgo(item.ts)}</div>`;
+  div.innerHTML = meta + body + ts;
+  return div;
+}
+
+// ── App init ──────────────────────────────────────────────────────────────────
+async function initApp() {
+  if (!getToken()) { showTokenModal(); hideLoading(); return; }
+  showLoading();
+  try {
+    await loadIndex();
+    renderFeed();
+  } catch (e) {
+    if (e.status === 401) {
+      hideLoading();
+      showTokenModal('Invalid token — please re-enter.');
+      return;
+    }
+    showError('Failed to load: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Auto-start
+initApp();
 // ── TASK 7: Item card renderers goes here ──
 // ── TASK 8: Input bar / text-code submit goes here ──
 // ── TASK 9: Binary upload goes here ──
