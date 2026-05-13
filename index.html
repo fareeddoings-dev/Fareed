@@ -711,7 +711,87 @@ function copyItem(id) {
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
   });
 }
-// ── TASK 8: Input bar / text-code submit goes here ──
+// ── Input bar ─────────────────────────────────────────────────────────────────
+const inputText = document.getElementById('input-text');
+const langChip  = document.getElementById('lang-chip');
+
+// Auto-grow textarea height
+inputText.addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  // Enable send button when there's content
+  document.getElementById('btn-send').disabled = isSending || !this.value.trim();
+});
+
+// Detect code in pasted text
+inputText.addEventListener('paste', () => {
+  setTimeout(checkCodeDetection, 0); // wait for paste to land
+});
+
+function checkCodeDetection() {
+  const text = inputText.value.trim();
+  if (!text || text.length < 20) {
+    clearLangChip(); return;
+  }
+  try {
+    const result = hljs.highlightAuto(text);
+    if (result.language && result.relevance >= 5) {
+      detectedLang = result.language;
+      langChip.textContent = result.language + ' ✕';
+      langChip.classList.add('visible');
+    } else {
+      clearLangChip();
+    }
+  } catch (_) {
+    clearLangChip();
+  }
+}
+
+function clearLangChip() {
+  detectedLang = null;
+  langChip.classList.remove('visible');
+  langChip.textContent = '';
+}
+
+// Clicking the chip dismisses code detection and treats as plain text
+langChip.addEventListener('click', clearLangChip);
+
+// Send on Ctrl+Enter / Cmd+Enter
+inputText.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('btn-send').click();
+  }
+});
+
+document.getElementById('btn-send').addEventListener('click', async () => {
+  const text = inputText.value.trim();
+  if (!text || isSending) return;
+  setSending(true);
+  let newItem; // declared outside try so catch can reference it for rollback
+  try {
+    newItem = {
+      id:      uid(),
+      type:    detectedLang ? 'code' : 'text',
+      content: inputText.value,  // preserve original whitespace
+      ts:      Math.floor(Date.now() / 1000),
+      ...(detectedLang ? { lang: detectedLang } : {}),
+    };
+    items.unshift(newItem);
+    renderFeed();
+    inputText.value = '';
+    inputText.style.height = 'auto';
+    clearLangChip();
+    await saveIndexWithRetry(newItem);
+  } catch (e) {
+    showError('Failed to save: ' + e.message);
+    // Rollback: remove the item we optimistically added
+    if (newItem) { items = items.filter(i => i.id !== newItem.id); renderFeed(); }
+  } finally {
+    setSending(false);
+    document.getElementById('btn-send').disabled = true;
+  }
+});
 // ── TASK 9: Binary upload goes here ──
 // ── TASK 10: Delete goes here ──
 </script>
