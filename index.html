@@ -653,7 +653,64 @@ async function initApp() {
 
 // Auto-start
 initApp();
-// ── TASK 7: Item card renderers goes here ──
+// ── Card body renderers ───────────────────────────────────────────────────────
+function renderTextBody(item) {
+  return `<div class="item-text-content">${escHtml(item.content)}</div>`;
+}
+
+function renderCodeBody(item) {
+  // highlight.js needs the raw text; hljs.highlight returns { value: html-string }
+  let highlighted;
+  try {
+    if (item.lang && hljs.getLanguage(item.lang)) {
+      highlighted = hljs.highlight(item.content, { language: item.lang }).value;
+    } else {
+      highlighted = hljs.highlightAuto(item.content).value;
+    }
+  } catch (_) {
+    highlighted = escHtml(item.content);
+  }
+  return `
+    <div class="code-header">
+      <span></span>
+      <span class="lang-badge">${escHtml(item.lang || 'code')}</span>
+    </div>
+    <div class="code-block"><code>${highlighted}</code></div>`;
+}
+
+function renderImageBody(item) {
+  // Cache-bust with a timestamp so stale GitHub CDN responses don't linger
+  const src = item.url + '?v=' + item.ts;
+  return `<img class="item-image" src="${escHtml(src)}" alt="${escHtml(item.name)}"
+    onclick="window.open('${escHtml(item.url)}','_blank')">`;
+}
+
+function renderFileBody(item) {
+  return `
+    <div class="file-row">
+      <span class="file-icon">${mimeIcon(item.mime)}</span>
+      <div class="file-info">
+        <div class="file-name">${escHtml(item.name)}</div>
+        <div class="file-size">${formatBytes(item.size)}</div>
+      </div>
+      <a class="btn-download" href="${escHtml(item.url)}" download="${escHtml(item.name)}" target="_blank">
+        Download
+      </a>
+    </div>`;
+}
+
+// ── Copy handler ──────────────────────────────────────────────────────────────
+function copyItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const text = (item.type === 'text' || item.type === 'code')
+    ? item.content
+    : item.url;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector(`[data-id="${id}"] .btn-copy`);
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  });
+}
 // ── TASK 8: Input bar / text-code submit goes here ──
 // ── TASK 9: Binary upload goes here ──
 // ── TASK 10: Delete goes here ──
