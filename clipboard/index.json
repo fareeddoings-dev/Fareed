@@ -1,15 +1,5 @@
 [
   {
-    "id": "b614823f-fbde-4f89-9f93-ffbf8fb9930c",
-    "type": "file",
-    "name": "Claude Setup.exe",
-    "mime": "application/x-msdownload",
-    "url": "https://raw.githubusercontent.com/fareeddoings-dev/Fareed/main/clipboard/uploads/1778676352499-Claude_Setup.exe",
-    "fileSha": "bdd1e73bdafa7b5a1634244a2d3baa7d1560b433",
-    "size": 6989472,
-    "ts": 1778676365
-  },
-  {
     "id": "014f2d83-1216-464e-be0d-97d0f584405f",
     "type": "file",
     "name": "index.html",
