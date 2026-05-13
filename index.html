@@ -1,2 +1,406 @@
 <!DOCTYPE html>
-<html><head><title>Clipboard</title></head><body><p>Coming soon</p></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Clipboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a2e;
+      --card: #2a2a3e;
+      --card-border: #3a3a5e;
+      --accent: #6c5ce7;
+      --accent-hover: #7d6ff0;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --code-bg: #111827;
+      --error: #e74c3c;
+      --input-bg: #1e1e2e;
+      --input-border: #444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* ── Feed ── */
+    #feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Item cards ── */
+    .item-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .item-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .item-type-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .item-actions { display: flex; gap: 6px; }
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-action:hover { color: var(--text); }
+    .btn-delete:hover { color: var(--error); border-color: var(--error); }
+    .item-timestamp { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+    /* ── Text items ── */
+    .item-text-content { line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+    /* ── Code items ── */
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .lang-badge {
+      font-size: 11px;
+      background: #333;
+      color: #aaa;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .code-block {
+      background: var(--code-bg);
+      border-radius: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .code-block code {
+      font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    }
+
+    /* ── Image items ── */
+    .item-image {
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 6px;
+      display: block;
+      cursor: zoom-in;
+    }
+
+    /* ── File items ── */
+    .file-row { display: flex; align-items: center; gap: 12px; }
+    .file-icon { font-size: 28px; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-weight: 500; word-break: break-all; }
+    .file-size { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .btn-download {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .btn-download:hover { background: var(--accent-hover); }
+
+    /* ── Input bar ── */
+    #input-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--card-border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    #input-text {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      min-height: 40px;
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    #input-text:focus { outline: none; border-color: var(--accent); }
+    #input-text::placeholder { color: var(--text-muted); }
+    .input-btn {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .input-btn:hover { color: var(--text); }
+    #btn-send {
+      background: var(--card);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #btn-send:hover:not(:disabled) { background: var(--accent-hover); }
+    #btn-send:disabled { background: #444; cursor: not-allowed; opacity: 0.6; }
+    #lang-chip {
+      display: none;
+      font-size: 11px;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: center;
+      flex-shrink: 0;
+    }
+    #lang-chip.visible { display: block; }
+
+    /* ── PAT Modal ── */
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #modal-overlay.hidden { display: none; }
+    #modal {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 28px;
+      width: min(400px, 90vw);
+    }
+    #modal h2 { margin-bottom: 10px; font-size: 18px; }
+    #modal p { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+    #modal code { background: #333; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+    #modal-token-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    #modal-token-input:focus { outline: none; border-color: var(--accent); }
+    #modal-save-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #modal-save-btn:hover { background: var(--accent-hover); }
+
+    /* ── Loading overlay ── */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    #loading-overlay.hidden { display: none; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--card-border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ── */
+    #empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 40px;
+      gap: 8px;
+    }
+    #empty-state.visible { display: flex; }
+    #empty-state .empty-icon { font-size: 40px; }
+
+    /* ── Error bar ── */
+    #error-bar {
+      font-size: 13px;
+      color: var(--error);
+      padding: 4px 16px;
+      min-height: 0;
+      display: none;
+    }
+    #error-bar.visible { display: block; }
+
+    /* ── Drag overlay ── */
+    #drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(108,92,231,0.12);
+      border: 3px dashed var(--accent);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      font-size: 22px;
+      color: var(--accent);
+      font-weight: 600;
+      pointer-events: none;
+    }
+    #drag-overlay.active { display: flex; }
+
+    /* ── Upload progress ── */
+    #upload-progress {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 16px;
+      display: none;
+    }
+    #upload-progress.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<header id="header">
+  <div class="header-left">
+    <span>📋</span>
+    <span>Clipboard</span>
+  </div>
+  <button id="btn-token" class="btn-ghost">⚙ Token</button>
+</header>
+
+<main id="feed">
+  <div id="empty-state">
+    <div class="empty-icon">📋</div>
+    <p>Nothing here yet. Paste something below.</p>
+  </div>
+</main>
+
+<div id="upload-progress"></div>
+<div id="error-bar"></div>
+
+<div id="input-bar">
+  <textarea id="input-text" placeholder="Paste or type..." rows="1"></textarea>
+  <span id="lang-chip" title="Click to treat as plain text"></span>
+  <button id="btn-attach" class="input-btn" title="Attach file">📎</button>
+  <input type="file" id="file-input" style="display:none">
+  <button id="btn-send" disabled>↑</button>
+</div>
+
+<div id="modal-overlay" class="hidden">
+  <div id="modal">
+    <h2>GitHub Token</h2>
+    <p>Enter a GitHub Personal Access Token to use Clipboard.<br><br>
+      Classic PAT: enable <code>public_repo</code> scope.<br>
+      Fine-grained PAT: enable <em>Contents</em> + <em>Git database</em> read/write on this repo.
+    </p>
+    <input type="password" id="modal-token-input" placeholder="ghp_...">
+    <button id="modal-save-btn">Save &amp; Continue</button>
+  </div>
+</div>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<div id="drag-overlay">Drop file to upload ↓</div>
+
+<script>
+// ── TASK 3: Config + API wrapper goes here ──
+// ── TASK 4: Auth goes here ──
+// ── TASK 5: index.json read/write goes here ──
+// ── TASK 6: App init + feed render goes here ──
+// ── TASK 7: Item card renderers goes here ──
+// ── TASK 8: Input bar / text-code submit goes here ──
+// ── TASK 9: Binary upload goes here ──
+// ── TASK 10: Delete goes here ──
+</script>
+
+</body>
+</html>
