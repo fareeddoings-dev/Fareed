@@ -480,7 +480,43 @@ async function ghFetch(path, options = {}) {
   }
   return res.status === 204 ? null : res.json();
 }
-// ── TASK 4: Auth goes here ──
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function getToken()     { return localStorage.getItem('gh_token'); }
+function setToken(t)    { localStorage.setItem('gh_token', t.trim()); }
+function clearToken()   { localStorage.removeItem('gh_token'); }
+
+function showTokenModal(message) {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.remove('hidden');
+  const input = document.getElementById('modal-token-input');
+  input.value = getToken() || '';
+  if (message) {
+    const p = overlay.querySelector('p');
+    p.insertAdjacentHTML('afterend',
+      `<p style="color:var(--error);font-size:13px;margin-bottom:10px">${escHtml(message)}</p>`);
+  }
+  input.focus();
+}
+
+function hideTokenModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  // Remove any error messages added dynamically
+  document.querySelectorAll('#modal p + p').forEach(el => el.remove());
+}
+
+document.getElementById('modal-save-btn').addEventListener('click', async () => {
+  const val = document.getElementById('modal-token-input').value.trim();
+  if (!val) return;
+  setToken(val);
+  hideTokenModal();
+  await initApp();
+});
+
+document.getElementById('modal-token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modal-save-btn').click();
+});
+
+document.getElementById('btn-token').addEventListener('click', () => showTokenModal());
 // ── TASK 5: index.json read/write goes here ──
 // ── TASK 6: App init + feed render goes here ──
 // ── TASK 7: Item card renderers goes here ──
