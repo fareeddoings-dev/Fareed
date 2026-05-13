@@ -690,7 +690,7 @@ function renderImageBody(item) {
   // Cache-bust with a timestamp so stale GitHub CDN responses don't linger
   const src = item.url + '?v=' + item.ts;
   return `<img class="item-image" src="${escHtml(src)}" alt="${escHtml(item.name)}"
-    onclick="window.open('${escHtml(item.url)}','_blank')">`;
+    data-url="${escHtml(item.url)}" onclick="window.open(this.dataset.url,'_blank')">`;
 }
 
 function renderFileBody(item) {
@@ -776,7 +776,9 @@ document.getElementById('btn-send').addEventListener('click', async () => {
   const text = inputText.value.trim();
   if (!text || isSending) return;
   setSending(true);
-  let newItem; // declared outside try so catch can reference it for rollback
+  let newItem;
+  const savedText = inputText.value;
+  const savedLang = detectedLang;
   try {
     newItem = {
       id:      uid(),
@@ -793,11 +795,14 @@ document.getElementById('btn-send').addEventListener('click', async () => {
     await saveIndexWithRetry(newItem);
   } catch (e) {
     showError('Failed to save: ' + e.message);
-    // Rollback: remove the item we optimistically added
     if (newItem) { items = items.filter(i => i.id !== newItem.id); renderFeed(); }
+    // Restore input so the user doesn't lose their content on a save failure
+    inputText.value = savedText;
+    inputText.style.height = 'auto';
+    if (savedLang) { detectedLang = savedLang; langChip.textContent = savedLang + ' ✕'; langChip.classList.add('visible'); }
   } finally {
     setSending(false);
-    document.getElementById('btn-send').disabled = true;
+    document.getElementById('btn-send').disabled = !inputText.value.trim();
   }
 });
 // ── Binary upload ─────────────────────────────────────────────────────────────
@@ -950,6 +955,7 @@ async function deleteItem(id) {
   if (!item) return;
 
   setSending(true);
+  const prevItems = items;
   try {
     // Update index first — a stranded binary is harmless, a stranded index entry is not
     items = items.filter(i => i.id !== id);
@@ -967,6 +973,8 @@ async function deleteItem(id) {
       });
     }
   } catch (e) {
+    items = prevItems;
+    renderFeed();
     showError('Delete failed: ' + e.message);
   } finally {
     setSending(false);
