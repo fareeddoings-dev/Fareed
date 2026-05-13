@@ -5,15 +5,5 @@
     "content": "    </div>\n    <div class=\"step\">\n      <div class=\"stepN\">2</div>\n      <div><div class=\"stepT\">فعّل Firestore Database</div>\n      <div class=\"stepD\">Build ← Firestore Database ← Create database ← Start in <strong>test mode</strong></div></div>\n    </div>\n    <div class=\"step\">\n      <div class=\"stepN\">3</div>\n      <div><div class=\"stepT\">فعّل Storage</div>\n      <div class=\"stepD\">Build ← Storage ← Get started ← Start in <strong>test mode</strong></div></div>\n    </div>\n    <div class=\"step\">\n      <div class=\"stepN\">4</div>\n      <div><div class=\"stepT\">احصل على Config</div>\n      <div class=\"stepD\">Project Settings (⚙) ← Your apps ← أضف Web app (&lt;/&gt;) ← انسخ الـ config</div></div>\n    </div>\n  </div>\n\n  <div class=\"card\">\n    <div style=\"font-size:15px;font-weight:600;margin-bottom:14px\">الصق إعدادات Firebase</div>\n    <div style=\"display:flex;flex-direction:column;gap:10px\">\n      <div><div class=\"lbl\">apiKey</div><input class=\"inp\" id=\"c1\" placeholder=\"AIzaSy...\"></div>\n      <div><div class=\"lbl\">authDomain</div><input class=\"inp\" id=\"c2\" placeholder=\"myproject.firebaseapp.com\"></div>\n      <div><div class=\"lbl\">projectId</div><input class=\"inp\" id=\"c3\" placeholder=\"my-project-id\"></div>\n      <div><div class=\"lbl\">storageBucket</div><input class=\"inp\" id=\"c4\" placeholder=\"my-project.appspot.com\"></div>\n      <div><div class=\"lbl\">messagingSenderId</div><input class=\"inp\" id=\"c5\" placeholder=\"123456789012\"></div>\n      <div><div class=\"lbl\">appId</div><input class=\"inp\" id=\"c6\" placeholder=\"1:123456:web:abc123...\"></div>\n    </div>\n    <div style=\"margin-top:16px;display:flex;just\n",
     "ts": 1778676285,
     "lang": "php-template"
-  },
-  {
-    "id": "337fee9b-8539-44fe-bcf6-ff54f65fc979",
-    "type": "file",
-    "name": "index.html",
-    "mime": "text/html",
-    "url": "https://raw.githubusercontent.com/fareeddoings-dev/Fareed/main/clipboard/uploads/1778676239636-index.html",
-    "fileSha": "fdd6987d28ecaad99fd88df3095dd8a610cf26d1",
-    "size": 21319,
-    "ts": 1778676244
   }
 ]
