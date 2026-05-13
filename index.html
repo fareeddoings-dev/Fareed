@@ -352,7 +352,10 @@
     <span>📋</span>
     <span>Clipboard</span>
   </div>
-  <button id="btn-token" class="btn-ghost">⚙ Token</button>
+  <div style="display:flex;gap:8px">
+    <button id="btn-refresh" class="btn-ghost">↻ Refresh</button>
+    <button id="btn-token" class="btn-ghost">⚙ Token</button>
+  </div>
 </header>
 
 <main id="feed">
@@ -382,6 +385,11 @@
     </p>
     <input type="password" id="modal-token-input" placeholder="ghp_...">
     <button id="modal-save-btn">Save &amp; Continue</button>
+    <p style="text-align:center;margin-top:14px">
+      <a href="#" id="modal-signout-link" style="color:var(--text-muted);font-size:13px">
+        Sign out &amp; clear token
+      </a>
+    </p>
   </div>
 </div>
 
@@ -964,6 +972,32 @@ async function deleteItem(id) {
     setSending(false);
   }
 }
+
+// ── Sign out ──────────────────────────────────────────────────────────────────
+document.getElementById('modal-signout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  if (!confirm('Sign out and clear your token?')) return;
+  clearToken();
+  items = [];
+  indexSha = null;
+  hideTokenModal();
+  renderFeed();
+  showTokenModal();
+});
+
+// ── Refresh ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  if (isSending) return;
+  showLoading();
+  try {
+    await loadIndex();
+    renderFeed();
+  } catch (e) {
+    showError('Refresh failed: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+});
 </script>
 
 </body>
