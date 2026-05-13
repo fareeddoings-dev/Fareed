@@ -935,7 +935,36 @@ document.addEventListener('drop', async (e) => {
   const file = e.dataTransfer.files[0];
   if (file) await handleFileUpload(file);
 });
-// ── TASK 10: Delete goes here ──
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  setSending(true);
+  try {
+    if ((item.type === 'image' || item.type === 'file') && item.fileSha) {
+      // Delete the binary file from uploads/
+      const safeName = item.url.split('/').pop(); // filename from raw URL
+      await ghFetch(`/contents/${UPLOADS_DIR}/${safeName}`, {
+        method: 'DELETE',
+        body:   JSON.stringify({
+          message: `delete clip: ${item.name}`,
+          sha:     item.fileSha,
+          branch:  BRANCH,
+        }),
+      });
+    }
+    // Remove from items array and update index.json
+    items = items.filter(i => i.id !== id);
+    await saveIndex();
+    renderFeed();
+  } catch (e) {
+    showError('Delete failed: ' + e.message);
+  } finally {
+    setSending(false);
+  }
+}
 </script>
 
 </body>
