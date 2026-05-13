@@ -517,7 +517,51 @@ document.getElementById('modal-token-input').addEventListener('keydown', e => {
 });
 
 document.getElementById('btn-token').addEventListener('click', () => showTokenModal());
-// ── TASK 5: index.json read/write goes here ──
+// ── index.json read/write ────────────────────────────────────────────────────
+async function loadIndex() {
+  try {
+    const data = await ghFetch(`/contents/${INDEX_PATH}`);
+    indexSha = data.sha;
+    items    = JSON.parse(fromB64(data.content));
+  } catch (e) {
+    if (e.status === 404) {
+      // First run — file doesn't exist yet
+      indexSha = null;
+      items    = [];
+    } else {
+      throw e;
+    }
+  }
+}
+
+async function saveIndex() {
+  const body = {
+    message: 'update clipboard',
+    content: toB64(JSON.stringify(items, null, 2)),
+    branch:  BRANCH,
+  };
+  if (indexSha) body.sha = indexSha;
+  const res = await ghFetch(`/contents/${INDEX_PATH}`, {
+    method: 'PUT',
+    body:   JSON.stringify(body),
+  });
+  indexSha = res.content.sha;
+}
+
+// On 409 conflict (another device wrote first): re-fetch, re-insert our item, retry once.
+async function saveIndexWithRetry(newItem) {
+  try {
+    await saveIndex();
+  } catch (e) {
+    if (e.status === 409) {
+      await loadIndex();
+      items.unshift(newItem); // re-prepend after fresh fetch
+      await saveIndex();      // if this also fails, it propagates to the caller
+    } else {
+      throw e;
+    }
+  }
+}
 // ── TASK 6: App init + feed render goes here ──
 // ── TASK 7: Item card renderers goes here ──
 // ── TASK 8: Input bar / text-code submit goes here ──
