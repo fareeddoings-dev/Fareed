@@ -1,5 +1,11 @@
 [
   {
+    "id": "ea2f662e-b624-40ff-81bd-a4cab38b1562",
+    "type": "text",
+    "content": "بسم الله",
+    "ts": 1778676380
+  },
+  {
     "id": "014f2d83-1216-464e-be0d-97d0f584405f",
     "type": "file",
     "name": "index.html",
