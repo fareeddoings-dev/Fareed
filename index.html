@@ -792,7 +792,149 @@ document.getElementById('btn-send').addEventListener('click', async () => {
     document.getElementById('btn-send').disabled = true;
   }
 });
-// ── TASK 9: Binary upload goes here ──
+// ── Binary upload ─────────────────────────────────────────────────────────────
+
+// Upload file to clipboard/uploads/ via Git Data API (handles files of any size up to 50MB)
+async function uploadBinary(filename, fileBase64) {
+  showUploadProgress('Creating blob…');
+
+  // 1. Create blob
+  const blobRes = await ghFetch('/git/blobs', {
+    method: 'POST',
+    body:   JSON.stringify({ content: fileBase64, encoding: 'base64' }),
+  });
+  const blobSha = blobRes.sha;
+
+  showUploadProgress('Building tree…');
+
+  // 2. Get HEAD ref → commit SHA
+  const refRes = await ghFetch(`/git/refs/heads/${BRANCH}`);
+  const latestCommitSha = refRes.object.sha;
+
+  // 3. Get the commit to find its tree SHA
+  const commitRes = await ghFetch(`/git/commits/${latestCommitSha}`);
+  const treeSha   = commitRes.tree.sha;
+
+  // 4. Create new tree containing the uploaded file
+  const newTreeRes = await ghFetch('/git/trees', {
+    method: 'POST',
+    body:   JSON.stringify({
+      base_tree: treeSha,
+      tree: [{
+        path: `${UPLOADS_DIR}/${filename}`,
+        mode: '100644',
+        type: 'blob',
+        sha:  blobSha,
+      }],
+    }),
+  });
+  const newTreeSha = newTreeRes.sha;
+
+  showUploadProgress('Committing…');
+
+  // 5. Create commit
+  const newCommitRes = await ghFetch('/git/commits', {
+    method: 'POST',
+    body:   JSON.stringify({
+      message: `add clip: ${filename}`,
+      tree:    newTreeSha,
+      parents: [latestCommitSha],
+    }),
+  });
+  const newCommitSha = newCommitRes.sha;
+
+  // 6. Advance branch ref
+  await ghFetch(`/git/refs/heads/${BRANCH}`, {
+    method: 'PATCH',
+    body:   JSON.stringify({ sha: newCommitSha }),
+  });
+
+  showUploadProgress('');
+  return {
+    blobSha,
+    rawUrl: `${RAW_BASE}/${UPLOADS_DIR}/${filename}`,
+  };
+}
+
+async function handleFileUpload(file) {
+  if (isSending) return;
+  if (file.size > MAX_BYTES) {
+    showError(`File too large: ${formatBytes(file.size)} (max 50 MB)`);
+    return;
+  }
+  setSending(true);
+  const isImage  = file.type.startsWith('image/');
+  const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  try {
+    const base64 = await readFileAsBase64(file);
+    const { blobSha, rawUrl } = await uploadBinary(safeName, base64);
+    const newItem = {
+      id:      uid(),
+      type:    isImage ? 'image' : 'file',
+      name:    file.name,
+      mime:    file.type || 'application/octet-stream',
+      url:     rawUrl,
+      fileSha: blobSha,
+      size:    file.size,
+      ts:      Math.floor(Date.now() / 1000),
+    };
+    items.unshift(newItem);
+    await saveIndexWithRetry(newItem);
+    renderFeed();
+  } catch (e) {
+    showError('Upload failed: ' + e.message);
+  } finally {
+    setSending(false);
+    showUploadProgress('');
+  }
+}
+
+// ── File picker ───────────────────────────────────────────────────────────────
+document.getElementById('btn-attach').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (file) await handleFileUpload(file);
+  e.target.value = ''; // reset so the same file can be re-selected
+});
+
+// ── Paste image from clipboard ────────────────────────────────────────────────
+inputText.addEventListener('paste', async (e) => {
+  for (const clipItem of e.clipboardData.items) {
+    if (clipItem.type.startsWith('image/')) {
+      e.preventDefault(); // don't paste the image data as text
+      const file = clipItem.getAsFile();
+      if (file) await handleFileUpload(file);
+      return;
+    }
+  }
+  // Non-image paste: Task 8's paste listener handles code detection
+});
+
+// ── Drag and drop ─────────────────────────────────────────────────────────────
+let dragCounter = 0; // track nested drag events
+
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  document.getElementById('drag-overlay').classList.add('active');
+});
+document.addEventListener('dragleave', () => {
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    document.getElementById('drag-overlay').classList.remove('active');
+  }
+});
+document.addEventListener('dragover', (e) => { e.preventDefault(); });
+document.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  document.getElementById('drag-overlay').classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file) await handleFileUpload(file);
+});
 // ── TASK 10: Delete goes here ──
 </script>
 
