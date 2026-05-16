@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "2e1ed99f-c552-46d1-859b-ab0906438d30",
+    "type": "file",
+    "name": "V1.zip",
+    "mime": "application/x-zip-compressed",
+    "url": "https://raw.githubusercontent.com/fareeddoings-dev/Fareed/main/clipboard/uploads/1778930543817-V1.zip",
+    "fileSha": "0ef8830c0d85ec8cb827b45c4221c6a32675cdb3",
+    "size": 681060,
+    "ts": 1778930550
+  }
+]
