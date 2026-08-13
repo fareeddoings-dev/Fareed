@@ -380,7 +380,7 @@
   <div id="modal">
     <h2>Clipboard Login</h2>
     <p>Enter your password once on this device. Your login will be remembered automatically.</p>
-    <input type="password" id="modal-token-input" placeholder="Password" autocomplete="current-password">
+    <input type="text" id="modal-token-input" placeholder="0555038099" inputmode="numeric" autocomplete="off" spellcheck="false">
     <button id="modal-save-btn">Login &amp; Continue</button>
     <p style="text-align:center;margin-top:14px">
       <a href="#" id="modal-signout-link" style="color:var(--text-muted);font-size:13px">
@@ -405,7 +405,7 @@ const INDEX_PATH  = 'clipboard/index.json';
 const UPLOADS_DIR = 'clipboard/uploads';
 const RAW_BASE    = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
 const API_BASE    = `https://api.github.com/repos/${OWNER}/${REPO}`;
-const AUTH_API    = 'https://fareed-clipboard-api.fareeddoings.workers.dev';
+const AUTH_API    = '__WORKER_URL__';
 const MAX_BYTES   = 50 * 1024 * 1024; // 50 MB
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -492,11 +492,21 @@ function setSession(t)  { localStorage.setItem('clipboard_session', t); }
 function clearSession() { localStorage.removeItem('clipboard_session'); }
 
 async function loginWithPassword(password) {
-  const res = await fetch(`${AUTH_API}/auth`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
+  if (!AUTH_API || AUTH_API === '__WORKER_URL__') {
+    throw new Error('Worker URL is not configured. Run deploy-clipboard-worker.ps1 first.');
+  }
+
+  let res;
+  try {
+    res = await fetch(`${AUTH_API}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+  } catch (_) {
+    throw new Error(`Cannot reach login server: ${AUTH_API}`);
+  }
+
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.token) {
     const err = new Error(body.message || 'Wrong password');
