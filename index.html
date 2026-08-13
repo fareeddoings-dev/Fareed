@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📋 Clipboard</title>
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clipboard">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./clipboard-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./clipboard-icon-192.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
@@ -21,6 +28,9 @@
       --error: #e74c3c;
       --input-bg: #1e1e2e;
       --input-border: #444;
+      --surface-soft: rgba(255,255,255,0.035);
+      --accent-soft: rgba(108,92,231,0.16);
+      --success: #35c98b;
     }
 
     body {
@@ -39,12 +49,20 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 11px 16px;
       border-bottom: 1px solid var(--card-border);
       flex-shrink: 0;
-      background: var(--bg);
+      background: rgba(26,26,46,0.96);
+      backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 20;
     }
-    .header-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; }
+    .header-left { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; }
+    .header-logo {
+      width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+      background: var(--accent-soft); border: 1px solid rgba(108,92,231,.35);
+    }
+    .header-actions { display:flex; gap:8px; align-items:center; }
     .btn-ghost {
       background: transparent;
       border: 1px solid var(--card-border);
@@ -54,7 +72,37 @@
       cursor: pointer;
       font-size: 13px;
     }
-    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); background: var(--surface-soft); }
+    #btn-install { display:none; color:#fff; border-color:rgba(108,92,231,.55); background:var(--accent-soft); }
+    #btn-install.visible { display:inline-flex; }
+
+    /* ── Search + Filters ── */
+    #tools-bar {
+      display:flex; align-items:center; gap:10px; padding:10px 16px; flex-shrink:0;
+      border-bottom:1px solid var(--card-border); background:var(--bg);
+    }
+    .search-wrap {
+      flex:1; min-width:160px; display:flex; align-items:center; gap:8px;
+      background:var(--input-bg); border:1px solid var(--input-border); border-radius:9px; padding:0 11px;
+    }
+    .search-wrap:focus-within { border-color:var(--accent); }
+    #search-input {
+      width:100%; height:36px; border:0; outline:0; color:var(--text); background:transparent;
+      font:inherit; font-size:13px;
+    }
+    #search-input::placeholder { color:var(--text-muted); }
+    #clear-search {
+      display:none; border:0; background:transparent; color:var(--text-muted); cursor:pointer; font-size:16px;
+    }
+    #clear-search.visible { display:block; }
+    #filter-tabs { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; }
+    #filter-tabs::-webkit-scrollbar { display:none; }
+    .filter-tab {
+      border:1px solid var(--card-border); background:transparent; color:var(--text-muted);
+      padding:8px 11px; border-radius:8px; cursor:pointer; font-size:12px; white-space:nowrap;
+    }
+    .filter-tab:hover { color:var(--text); }
+    .filter-tab.active { background:var(--accent-soft); border-color:rgba(108,92,231,.55); color:#fff; }
 
     /* ── Feed ── */
     #feed {
@@ -70,9 +118,12 @@
     .item-card {
       background: var(--card);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
+      border-radius: 11px;
       padding: 14px 16px;
+      transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
     }
+    .item-card:hover { border-color:#4b4b70; }
+    .item-card.pinned { border-color:rgba(108,92,231,.62); box-shadow:0 0 0 1px rgba(108,92,231,.08); }
     .item-meta {
       display: flex;
       align-items: center;
@@ -85,17 +136,22 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    .item-actions { display: flex; gap: 6px; }
+    .item-actions { display: flex; gap: 6px; align-items:center; }
     .btn-action {
       background: transparent;
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 3px 8px;
-      border-radius: 4px;
+      padding: 5px 9px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 12px;
+      min-height:29px;
     }
     .btn-action:hover { color: var(--text); }
+    .btn-copy { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; min-width:58px; }
+    .btn-copy:hover { background:var(--accent-hover); border-color:var(--accent-hover); }
+    .btn-copy.copied { background:var(--success); border-color:var(--success); }
+    .btn-pin.active { color:#fff; border-color:rgba(108,92,231,.55); background:var(--accent-soft); }
     .btn-delete:hover { color: var(--error); border-color: var(--error); }
     .item-timestamp { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
 
@@ -198,7 +254,9 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .input-btn:hover { color: var(--text); }
+    .input-btn:hover { color: var(--text); border-color:var(--text-muted); }
+    .input-btn-wide { width:auto; min-width:72px; padding:0 12px; gap:6px; font-size:13px; }
+    #btn-paste { color:var(--text); }
     #btn-send {
       background: var(--card);
       border: none;
@@ -343,20 +401,64 @@
       display: none;
     }
     #upload-progress.visible { display: block; }
+
+    @media (max-width: 720px) {
+      #header { padding:9px 10px; }
+      .header-left > span:last-child { display:none; }
+      .header-actions { gap:5px; }
+      .btn-ghost { padding:6px 8px; }
+      #btn-refresh { font-size:0; }
+      #btn-refresh::after { content:'↻'; font-size:18px; }
+      #btn-token { font-size:0; }
+      #btn-token::after { content:'🔒'; font-size:15px; }
+      #btn-install { font-size:0; }
+      #btn-install::after { content:'＋'; font-size:18px; }
+      #tools-bar { flex-direction:column; align-items:stretch; padding:8px 10px; gap:8px; }
+      #filter-tabs { width:100%; }
+      .filter-tab { flex:1 0 auto; padding:7px 10px; }
+      #feed { padding:10px; gap:9px; }
+      .item-card { padding:12px; }
+      .item-meta { align-items:flex-start; gap:8px; }
+      .item-actions { gap:4px; }
+      .btn-action { padding:5px 7px; }
+      .btn-delete { font-size:0; min-width:30px; }
+      .btn-delete::after { content:'×'; font-size:16px; }
+      #input-bar { padding:9px 10px; gap:6px; }
+      .input-btn-wide { min-width:40px; width:40px; padding:0; font-size:0; }
+      .input-btn-wide::after { content:'Paste'; font-size:0; }
+      #btn-paste .paste-icon { font-size:18px; }
+      .item-image { max-height:240px; }
+    }
   </style>
 </head>
 <body>
 
 <header id="header">
   <div class="header-left">
-    <span>📋</span>
+    <span class="header-logo">📋</span>
     <span>Clipboard</span>
   </div>
-  <div style="display:flex;gap:8px">
-    <button id="btn-refresh" class="btn-ghost">↻ Refresh</button>
-    <button id="btn-token" class="btn-ghost">🔒 Login</button>
+  <div class="header-actions">
+    <button id="btn-install" class="btn-ghost" title="Install app">＋ Install</button>
+    <button id="btn-refresh" class="btn-ghost" title="Refresh">↻ Refresh</button>
+    <button id="btn-token" class="btn-ghost" title="Login / Sign out">🔒 Login</button>
   </div>
 </header>
+
+<section id="tools-bar">
+  <div class="search-wrap">
+    <span aria-hidden="true">⌕</span>
+    <input id="search-input" type="search" placeholder="Search clipboard..." autocomplete="off">
+    <button id="clear-search" title="Clear search" aria-label="Clear search">×</button>
+  </div>
+  <div id="filter-tabs" aria-label="Clipboard filters">
+    <button class="filter-tab active" data-filter="all">All</button>
+    <button class="filter-tab" data-filter="text">Text</button>
+    <button class="filter-tab" data-filter="code">Code</button>
+    <button class="filter-tab" data-filter="image">Images</button>
+    <button class="filter-tab" data-filter="file">Files</button>
+  </div>
+</section>
 
 <main id="feed">
   <div id="empty-state">
@@ -371,6 +473,7 @@
 <div id="input-bar">
   <textarea id="input-text" placeholder="Paste or type..." rows="1"></textarea>
   <span id="lang-chip" title="Click to treat as plain text"></span>
+  <button id="btn-paste" class="input-btn input-btn-wide" title="Paste from clipboard"><span class="paste-icon">⎘</span><span>Paste</span></button>
   <button id="btn-attach" class="input-btn" title="Attach file">📎</button>
   <input type="file" id="file-input" style="display:none">
   <button id="btn-send" disabled>↑</button>
@@ -413,6 +516,9 @@ let items     = [];    // current clipboard items (newest-first)
 let indexSha  = null;  // SHA of clipboard/index.json, required for writes
 let isSending = false; // true while a write is in-flight
 let detectedLang = null; // language auto-detected in current input
+let activeFilter = 'all';
+let searchQuery = '';
+let deferredInstallPrompt = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function uid() { return crypto.randomUUID(); }
@@ -488,8 +594,15 @@ async function ghFetch(path, options = {}) {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 function getSession()   { return localStorage.getItem('clipboard_session'); }
-function setSession(t)  { localStorage.setItem('clipboard_session', t); }
-function clearSession() { localStorage.removeItem('clipboard_session'); }
+function setSession(t)  { localStorage.setItem('clipboard_session', t); updateLoginButton(); }
+function clearSession() { localStorage.removeItem('clipboard_session'); updateLoginButton(); }
+function updateLoginButton() {
+  const btn = document.getElementById('btn-token');
+  if (!btn) return;
+  btn.textContent = getSession() ? '🔓 Signed in' : '🔒 Login';
+  btn.title = getSession() ? 'Sign out from this device' : 'Login';
+}
+updateLoginButton();
 
 async function loginWithPassword(password) {
   if (!AUTH_API || AUTH_API === '__WORKER_URL__') {
@@ -635,22 +748,48 @@ function showUploadProgress(msg) {
 function setSending(val) {
   isSending = val;
   const btn = document.getElementById('btn-send');
-  btn.disabled = val;
+  const input = document.getElementById('input-text');
+  btn.disabled = val || !input.value.trim();
   btn.textContent = val ? '⟳' : '↑';
 }
 
 // ── Feed rendering ────────────────────────────────────────────────────────────
+function itemMatchesSearch(item, query) {
+  if (!query) return true;
+  const haystack = [item.type, item.lang, item.name, item.content]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
+function getVisibleItems() {
+  const filtered = items.filter(item => {
+    const typeOk = activeFilter === 'all' || item.type === activeFilter;
+    return typeOk && itemMatchesSearch(item, searchQuery);
+  });
+  return filtered.sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+}
+
 function renderFeed() {
   const feed   = document.getElementById('feed');
   const empty  = document.getElementById('empty-state');
-  // Remove all existing cards (keep #empty-state)
   feed.querySelectorAll('.item-card').forEach(el => el.remove());
-  if (items.length === 0) {
+
+  const visibleItems = getVisibleItems();
+  if (visibleItems.length === 0) {
     empty.classList.add('visible');
+    const message = empty.querySelector('p');
+    if (message) {
+      message.textContent = items.length === 0
+        ? 'Nothing here yet. Paste something below.'
+        : 'No items match your search or filter.';
+    }
     return;
   }
+
   empty.classList.remove('visible');
-  for (const item of items) {
+  for (const item of visibleItems) {
     const card = buildCard(item);
     if (card) feed.appendChild(card);
   }
@@ -658,13 +797,14 @@ function renderFeed() {
 
 function buildCard(item) {
   const div = document.createElement('div');
-  div.className = 'item-card';
+  div.className = `item-card${item.pinned ? ' pinned' : ''}`;
   div.dataset.id = item.id;
 
   const meta = `
     <div class="item-meta">
-      <span class="item-type-badge">${escHtml(item.type)}${item.lang ? ` · ${escHtml(item.lang)}` : ''}</span>
+      <span class="item-type-badge">${item.pinned ? '📌 · ' : ''}${escHtml(item.type)}${item.lang ? ` · ${escHtml(item.lang)}` : ''}</span>
       <div class="item-actions">
+        <button class="btn-action btn-pin${item.pinned ? ' active' : ''}" onclick="togglePin('${item.id}')" title="${item.pinned ? 'Unpin' : 'Pin'}">${item.pinned ? 'Unpin' : 'Pin'}</button>
         <button class="btn-action btn-copy" onclick="copyItem('${item.id}')">Copy</button>
         <button class="btn-action btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
       </div>
@@ -686,6 +826,42 @@ function buildCard(item) {
   const ts = `<div class="item-timestamp">${timeAgo(item.ts)}</div>`;
   div.innerHTML = meta + body + ts;
   return div;
+}
+
+async function savePinWithRetry(id, pinned) {
+  try {
+    await saveIndex();
+  } catch (e) {
+    if (e.status !== 409) throw e;
+    await loadIndex();
+    const freshItem = items.find(i => i.id === id);
+    if (!freshItem) throw new Error('Item no longer exists.');
+    freshItem.pinned = pinned;
+    await saveIndex();
+  }
+}
+
+async function togglePin(id) {
+  if (isSending) return;
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  const previous = !!item.pinned;
+  const next = !previous;
+  item.pinned = next;
+  renderFeed();
+  setSending(true);
+  try {
+    await savePinWithRetry(id, next);
+    renderFeed();
+  } catch (e) {
+    const current = items.find(i => i.id === id);
+    if (current) current.pinned = previous;
+    renderFeed();
+    showError('Pin failed: ' + e.message);
+  } finally {
+    setSending(false);
+  }
 }
 
 // ── App init ──────────────────────────────────────────────────────────────────
@@ -757,20 +933,95 @@ function renderFileBody(item) {
 }
 
 // ── Copy handler ──────────────────────────────────────────────────────────────
-function copyItem(id) {
+async function copyItem(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
-  const text = (item.type === 'text' || item.type === 'code')
-    ? item.content
-    : item.url;
-  navigator.clipboard.writeText(text).then(() => {
+  const text = (item.type === 'text' || item.type === 'code') ? item.content : item.url;
+  try {
+    await navigator.clipboard.writeText(text);
     const btn = document.querySelector(`[data-id="${id}"] .btn-copy`);
-    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
-  });
+    if (btn) {
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 1400);
+    }
+  } catch (_) {
+    showError('Copy was blocked by the browser.');
+  }
 }
+
 // ── Input bar ─────────────────────────────────────────────────────────────────
 const inputText = document.getElementById('input-text');
 const langChip  = document.getElementById('lang-chip');
+const searchInput = document.getElementById('search-input');
+const clearSearchBtn = document.getElementById('clear-search');
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value.trim().toLowerCase();
+  clearSearchBtn.classList.toggle('visible', !!searchQuery);
+  renderFeed();
+});
+
+clearSearchBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  searchQuery = '';
+  clearSearchBtn.classList.remove('visible');
+  searchInput.focus();
+  renderFeed();
+});
+
+document.querySelectorAll('.filter-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeFilter = btn.dataset.filter;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b === btn));
+    renderFeed();
+  });
+});
+
+document.getElementById('btn-paste').addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) return;
+    const start = inputText.selectionStart ?? inputText.value.length;
+    const end = inputText.selectionEnd ?? inputText.value.length;
+    inputText.value = inputText.value.slice(0, start) + text + inputText.value.slice(end);
+    inputText.dispatchEvent(new Event('input', { bubbles: true }));
+    checkCodeDetection();
+    inputText.focus();
+  } catch (_) {
+    inputText.focus();
+    showError('Browser blocked direct Paste. Press Ctrl+V instead.');
+  }
+});
+
+// PWA install
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('btn-install').classList.add('visible');
+});
+
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice.catch(() => null);
+  deferredInstallPrompt = null;
+  document.getElementById('btn-install').classList.remove('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.getElementById('btn-install').classList.remove('visible');
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 
 // Auto-grow textarea height
 inputText.addEventListener('input', function () {
